@@ -20,4 +20,82 @@ luodajiao:
   clothes: todo
   meal: todo
 
+  // 将设置放入此文件中以覆盖默认设置
+  {
+      "go.buildOnSave": true,
+      "go.lintOnSave": true,//n. 软麻布；线头；棉绒 vi. 飞散出棉线
+      "go.vetOnSave": true, // 审查；诊疗
+      "go.buildTags": "",//  标签；（机动车）牌照
+      "go.buildFlags": [],//旗帜（flag的复数）；标记
+      "go.lintFlags": [],
+      "go.vetFlags": [],
+      "go.coverOnSave": false,//包括；采访，报导；涉及封面，封皮；盖子；掩蔽物;幌子，借口vi. 覆盖；代替
+      "go.useCodeSnippetsOnFunctionSuggest": false,//使用代码片段功能建议
+      "go.formatOnSave": true,
+      "go.formatTool": "goreturns",
+      "go.goroot": "/home/zhoudazhuang/usr/local/go/go",
+      "go.gocodeAutoBuild": false,
+      "workbench.iconTheme": "vscode-icons",
+     	 // 以像素为单位控制字号。
+     	 "editor.fontSize": 17,
+      //关闭预览功能
+     	 "workbench.editor.enablePreview": false,
+      // 控制已更新文件的自动保存。接受的值:“off”、"afterDelay”、“onFocusChange”(编辑器失去焦点)、“onWindowChange”(窗口失去焦点)。如果设置为“afterDelay”，则可在 "files.autoSaveDelay" 中配置延迟。
+      "files.autoSave": "afterDelay",
+      // 控制延迟(以秒为单位)，在该延迟后将自动保存更新后的文件。仅在 "files.autoSave'" 设置为“afterDelay”时适用。
+      "files.autoSaveDelay": 4000
+  }
+
+
+  // 将键绑定放入此文件中以覆盖默认值
+  [
+      //删除一行
+      {
+          "key": "ctrl+y",
+          "command": "editor.action.deleteLines",
+          "when": "editorTextFocus"
+      },
+      //复制一行
+      {
+          "key": "ctrl+d",
+          "command": "editor.action.copyLinesDownAction",
+          "when": "editorTextFocus && !editorReadonly"
+      },
+      {
+          "key": "ctrl+shift+alt+down",
+          "command": "-editor.action.copyLinesDownAction",
+          "when": "editorTextFocus && !editorReadonly"
+      },
+      //扩大选择
+      {
+          "key": "ctrl+w",
+          "command": "editor.action.smartSelect.grow",
+          "when": "editorTextFocus"
+      },
+      {
+          "key": "shift+alt+right",
+          "command": "-editor.action.smartSelect.grow",
+          "when": "editorTextFocus"
+      },
+      //关闭当前编辑器（窗口）
+      {
+          "key": "alt+4",
+          "command": "workbench.action.closeActiveEditor"
+      },
+      {
+          "key": "ctrl+w",
+          "command": "-workbench.action.closeActiveEditor"
+      },
+      {
+          "key": "ctrl+shift+/",
+          "command": "editor.action.blockComment",
+          "when": "editorTextFocus && !editorReadonly"
+      },
+      {
+          "key": "ctrl+shift+a",
+          "command": "-editor.action.blockComment",
+          "when": "editorTextFocus && !editorReadonly"
+      }
+  ]
+
 
