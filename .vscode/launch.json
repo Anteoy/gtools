@@ -5,13 +5,14 @@
             "name": "Launch",
             "type": "go",
             "request": "launch",
-            "mode": "debug",
+            // "mode": "debug",
+            "mode": "test",
             "remotePath": "",
             "port": 2345,
             "host": "127.0.0.1",
             "program": "${fileDirname}",
             "env": {
-                "GOPATH":"E:\\develop\\GOP\\class100\\gtools"
+                "GOPATH":"/home/zhoudazhuang/class100/gtools"
             },
             "args": [],
             "showLog": true

@@ -15,9 +15,7 @@ const (
 )
 
 func writeString(writer func(string), f *os.File) {
-	for i := 0; i < TEST_WRITING_LINE; i++ {
-		writer(TEST_WRITING_CONTENT)
-	}
+	writer(TEST_WRITING_CONTENT)
 	if f != nil {
 		f.Close()
 	}
