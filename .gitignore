@@ -33,3 +33,7 @@ _testmain.go
 *.prof
 
 gtools.iml
+
+#git rm -r --cached .
+#git add .
+#git commit -m 'update .gitignore'
