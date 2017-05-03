@@ -2,8 +2,9 @@
 *.o
 *.a
 *.so
+*.iml
 /.idea/
-/liongo.iml
+/gtools.iml
 liongo
 
 /views/serve/*
@@ -24,9 +25,16 @@ _test
 _cgo_defun.c
 _cgo_gotypes.go
 _cgo_export.*
-gtools.iml
+/gtools.iml
 _testmain.go
 
+*.iml
 *.exe
 *.test
 *.prof
+
+gtools.iml
+
+#git rm -r --cached .
+#git add .
+#git commit -m 'update .gitignore'
