@@ -10,5 +10,5 @@ func main() {
 	//a = new(AA)
 	fmt.Printf("a : %+v\n", a)
 	var b interface{} = a
-	fmt.Println(a == nil, b == a, b == nil)
+	fmt.Println(a == nil, b == nil, b == a)
 }
