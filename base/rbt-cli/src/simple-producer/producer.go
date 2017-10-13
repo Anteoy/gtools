@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	uri          = flag.String("uri", "amqp://@106.14.168.202:32313/", "AMQP URI")
+	uri          = flag.String("uri", "amqp://", "AMQP URI")
 	exchangeName = flag.String("exchange", "test-exchange", "Durable AMQP exchange name")
 	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
 	routingKey   = flag.String("key", "test-key", "AMQP routing key")
