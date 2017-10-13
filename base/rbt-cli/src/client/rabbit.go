@@ -18,6 +18,7 @@ type Receiver interface {
 
 // RabbitMQ 用于管理和维护rabbit mq连接
 type RabbitMQ struct {
+	Conn       *amqp.Connection
 	ServerAddr string
 	MaxRefresh int
 	channel    *amqp.Channel
@@ -44,15 +45,39 @@ type RabbitProducerManager struct {
 
 // Publish 发送mq 消息
 func (p *RabbitProducerManager) Publish(msg string) error {
+	//i := 1
+	////no ack 完全共用
+	//if p.channel == nil {
+	//	for !p.Refresh() {
+	//		if i > p.MaxRefresh {
+	//			return fmt.Errorf("mq msg 无法发送: 超过最大重连次数%d仍无法连接,请人工排查错误\n", p.MaxRefresh)
+	//		}
+	//		log.Printf("producer 获取rabbit连接失败,将在5s后进行第%d次重试,自定义最大重试次数为%d次\n", i, p.MaxRefresh)
+	//		time.Sleep(5 * time.Second)
+	//		i = i + 1
+	//	}
+	//}
+	//ack 共用conn
 	i := 1
-	for !p.Refresh() {
-		if i > p.MaxRefresh {
-			return fmt.Errorf("mq msg 无法发送: 超过最大重连次数%d仍无法连接,请人工排查错误\n", p.MaxRefresh)
+	if p.Conn == nil {
+		for !p.Refresh() {
+			if i > p.MaxRefresh {
+				return fmt.Errorf("mq msg 无法发送: 超过最大重连次数%d仍无法连接,请人工排查错误\n", p.MaxRefresh)
+			}
+			log.Printf("producer 获取rabbit连接失败,将在5s后进行第%d次重试,自定义最大重试次数为%d次\n", i, p.MaxRefresh)
+			time.Sleep(5 * time.Second)
+			i = i + 1
 		}
-		log.Printf("producer 获取rabbit连接失败,将在5s后进行第%d次重试,自定义最大重试次数为%d次\n", i, p.MaxRefresh)
-		time.Sleep(5 * time.Second)
-		i = i + 1
 	}
+	if p.channel != nil {
+		p.channel.Close()
+	}
+	newchannel, err := p.Conn.Channel()
+	if err != nil {
+		//todo 连接关闭
+		fmt.Printf("conn 获取 channel 出现错误:%v\n", err)
+	}
+	p.channel = newchannel
 	if err := p.channel.ExchangeDeclare(
 		p.exchangeName,
 		p.exchangeType,
@@ -62,6 +87,7 @@ func (p *RabbitProducerManager) Publish(msg string) error {
 		false,
 		nil,
 	); err != nil {
+		//todo 连接关闭
 		return fmt.Errorf("Exchange Declare 定义exchange出错了: %s\n", err)
 	}
 	//保证消息可靠
@@ -151,9 +177,11 @@ func (mq *RabbitConsumerManager) prepareExchange() error {
 
 // run 开始获取连接并初始化相关操作
 func (mq *RabbitConsumerManager) run() {
-	if !mq.Refresh() {
-		fmt.Errorf("rabbit刷新连接失败，即将进行重连: %s", mq.ServerAddr)
-		return
+	if mq.channel == nil {
+		if !mq.Refresh() {
+			fmt.Errorf("rabbit刷新连接失败，即将进行重连: %s", mq.ServerAddr)
+			return
+		}
 	}
 
 	fmt.Println("rabbitMQ 连接成功,开启消费消息服务...")
@@ -177,6 +205,7 @@ func (mq *RabbitConsumerManager) run() {
 }
 
 func (mq *RabbitConsumerManager) Distory() {
+	mq.channel.Close()
 	mq.channel = nil
 }
 
@@ -184,12 +213,13 @@ func (mq *RabbitConsumerManager) Distory() {
 func (mq *RabbitMQ) Refresh() bool {
 	rabbitmqConn, err := amqp.Dial(mq.ServerAddr)
 	if err != nil {
-		panic("RabbitMQ 初始化失败: " + err.Error())
+		fmt.Println("RabbitMQ 初始化失败: " + err.Error())
 		return false
 	}
+	mq.Conn = rabbitmqConn
 	mq.channel, err = rabbitmqConn.Channel()
 	if err != nil {
-		panic("打开Channel失败: " + err.Error())
+		fmt.Println("打开Channel失败: " + err.Error())
 		return false
 	}
 	return true
@@ -246,7 +276,7 @@ func (mq *RabbitConsumerManager) listen(receiver Receiver) {
 		receiver.OnError(fmt.Errorf("绑定队列 [%s - %s] 到交换机失败: %s", queueName, routerKey, err.Error()))
 	}
 
-	// 获取消费通道 确保rabbitmq会一个一个发消息
+	// 获取消费通道 确保rabbitmq会一个一个发消息 定义通道上允许的未确认交货的最大数量
 	mq.channel.Qos(1, 0, true)
 	deliveries, err := mq.channel.Consume(
 		queueName,
