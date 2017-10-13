@@ -40,7 +40,7 @@ func a(wg sync.WaitGroup) {
 	// 假设这里有一个AReceiver和BReceiver
 	aReceiver := &ReceiverA{}
 
-	mq := irabbit.NewRabbitConsumer("", "test-exchange", "direct", 3)
+	mq := irabbit.NewRabbitConsumer("amqp://", "test-exchange", "direct", 3)
 	// 将这个接收者注册到
 	mq.RegisterReceiver(aReceiver)
 	mq.Start()
