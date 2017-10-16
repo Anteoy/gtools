@@ -1,4 +1,4 @@
-package irabbit
+package rabbitd
 
 import (
 	"fmt"
@@ -14,6 +14,9 @@ type Receiver interface {
 	RouterKey() string // 队列绑定的路由
 	OnError(error)     // 错误处理
 	OnReceive([]byte) bool
+	ConsumerMount() int //开启接收者协程数量
+	ExchangeName() string
+	ExchangeType() string
 }
 
 // RabbitMQ 用于管理和维护rabbit mq连接
@@ -27,11 +30,8 @@ type RabbitMQ struct {
 // RabbitConsumerManager consumer 管理
 type RabbitConsumerManager struct {
 	RabbitMQ
-	wg            sync.WaitGroup
-	receivers     []Receiver
-	exchangeName  string // exchange的名称
-	exchangeType  string // exchange的类型
-	ConsumerMount int
+	wg        sync.WaitGroup
+	receivers []Receiver
 }
 
 // RabbitProducerManager 消息生产者管理
@@ -75,7 +75,16 @@ func (p *RabbitProducerManager) Publish(msg string) error {
 	newchannel, err := p.Conn.Channel()
 	if err != nil {
 		//todo 连接关闭
-		fmt.Printf("conn 获取 channel 出现错误:%v\n", err)
+		fmt.Printf("conn 获取 channel 出现错误,即将重新connect:%v\n", err)
+		for !p.Refresh() {
+			if i > p.MaxRefresh {
+				return fmt.Errorf("mq msg 无法发送: 超过最大重连次数%d仍无法连接,请人工排查错误\n", p.MaxRefresh)
+			}
+			log.Printf("producer 获取rabbit连接失败,将在5s后进行第%d次重试,自定义最大重试次数为%d次\n", i, p.MaxRefresh)
+			time.Sleep(5 * time.Second)
+			i = i + 1
+		}
+		newchannel, err = p.Conn.Channel()
 	}
 	p.channel = newchannel
 	if err := p.channel.ExchangeDeclare(
@@ -146,31 +155,30 @@ func NewRabbitProducer(ServerAddr, exchangeName, exchangeType, routingKey string
 	return instanse
 }
 
+//, exchangeName, exchangeType string, consumerMount int
 // New 创建一个新的操作Rabbit Consumer的对象
-func NewRabbitConsumer(ServerAddr, exchangeName, exchangeType string, consumerMount int) *RabbitConsumerManager {
+func NewRabbitConsumer(ServerAddr string) *RabbitConsumerManager {
 	// 这里可以根据自己的需要去定义
-	instanse := &RabbitConsumerManager{
-		exchangeName: exchangeName,
-		exchangeType: exchangeType,
-	}
+	instanse := &RabbitConsumerManager{}
 	instanse.ServerAddr = ServerAddr
-	instanse.ConsumerMount = consumerMount
 	return instanse
 }
 
 // prepareExchange
 func (mq *RabbitConsumerManager) prepareExchange() error {
-	err := mq.channel.ExchangeDeclare(
-		mq.exchangeName,
-		mq.exchangeType,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if nil != err {
-		return err
+	for _, v := range mq.receivers {
+		err := mq.channel.ExchangeDeclare(
+			v.ExchangeName(),
+			v.ExchangeType(),
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if nil != err {
+			return err
+		}
 	}
 	return nil
 }
@@ -191,7 +199,7 @@ func (mq *RabbitConsumerManager) run() {
 	for _, receiver := range mq.receivers {
 		mq.wg.Add(1)
 		fmt.Printf("消费者消费队列 :%s,开始进入监听状态...\n", receiver.QueueName())
-		for i := 0; i < mq.ConsumerMount; i++ {
+		for i := 0; i < receiver.ConsumerMount(); i++ {
 			go mq.listen(receiver)
 		}
 	}
@@ -268,7 +276,7 @@ func (mq *RabbitConsumerManager) listen(receiver Receiver) {
 	err = mq.channel.QueueBind(
 		queueName,
 		routerKey,
-		mq.exchangeName,
+		receiver.ExchangeName(),
 		false,
 		nil,
 	)
