@@ -41,6 +41,7 @@ type RabbitProducerManager struct {
 	exchangeType string // exchange的类型
 	RoutingKey   string
 	Reliable     bool
+	QueueName    string
 }
 
 // Publish 发送mq 消息
@@ -72,9 +73,11 @@ func (p *RabbitProducerManager) Publish(msg string) error {
 	if p.channel != nil {
 		p.channel.Close()
 	}
+	p.Conn.ConnectionState()
 	newchannel, err := p.Conn.Channel()
 	if err != nil {
 		//todo 连接关闭
+		i := 1
 		fmt.Printf("conn 获取 channel 出现错误,即将重新connect:%v\n", err)
 		for !p.Refresh() {
 			if i > p.MaxRefresh {
@@ -96,8 +99,39 @@ func (p *RabbitProducerManager) Publish(msg string) error {
 		false,
 		nil,
 	); err != nil {
-		//todo 连接关闭
+		p.Conn.Close()
 		return fmt.Errorf("Exchange Declare 定义exchange出错了: %s\n", err)
+	}
+
+	//定义并binding queue
+	queueName := p.QueueName
+	routerKey := p.RoutingKey
+
+	// 声明Queue
+	_, err = p.channel.QueueDeclare(
+		queueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if nil != err {
+		fmt.Errorf("初始化队列 %s 失败: %s", queueName, err.Error())
+		return fmt.Errorf("初始化队列 %s 失败: %s", queueName, err.Error())
+	}
+
+	// 将Queue绑定到Exchange上去
+	err = p.channel.QueueBind(
+		queueName,
+		routerKey,
+		p.exchangeName,
+		false,
+		nil,
+	)
+	if nil != err {
+		fmt.Errorf("绑定队列 [%s - %s] 到交换机失败: %s", queueName, routerKey, err.Error())
+		return fmt.Errorf("绑定队列 [%s - %s] 到交换机失败: %s", queueName, routerKey, err.Error())
 	}
 	//保证消息可靠
 	if p.Reliable {
@@ -142,13 +176,14 @@ func confirmOne(confirms <-chan amqp.Confirmation) {
 }
 
 // New 创建一个新的操作Rabbit Producer的对象
-func NewRabbitProducer(ServerAddr, exchangeName, exchangeType, routingKey string, reliable bool, retry int) *RabbitProducerManager {
+func NewRabbitProducer(ServerAddr, exchangeName, exchangeType, routingKey, queueName string, reliable bool, retry int) *RabbitProducerManager {
 	// 这里可以根据自己的需要去定义
 	instanse := &RabbitProducerManager{
 		exchangeName: exchangeName,
 		exchangeType: exchangeType,
 		Reliable:     reliable,
 		RoutingKey:   routingKey,
+		QueueName:    queueName,
 	}
 	instanse.ServerAddr = ServerAddr
 	instanse.MaxRefresh = retry
