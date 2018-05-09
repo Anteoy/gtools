@@ -1,0 +1,14 @@
+ gcc -c -fPIC -o test.o test.c
+ 
+  gcc -dynamiclib -o libtest.dylib test.o
+  ```
+ /usr/lib/gcc/x86_64-linux-gnu/5/../../../x86_64-linux-gnu/crt1.o：在函数‘_start’中：
+ (.text+0x20)：对‘main’未定义的引用
+ collect2: error: ld returned 1 exit status
+
+ ```
+ 
+ 
+ gcc -c -fPIC -o libtest.so test.c 
+ 
+ 
