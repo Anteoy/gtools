@@ -2,11 +2,17 @@ package main
 
 import "fmt"
 
-//make 分配了一个有初始值（非零）的T类型（我这里打印的为空，个人理解为空值）返回值 当slice cap无法满足需要，则在初始大小cap（即第三个参数，这里为6），成倍增长
+type foo struct {
+	A int
+	B string
+}
+
+//make 只能创建 slice,map 和 channel;分配了一个有初始值（非零）的T类型（我这里打印的为空，个人理解为空值）返回值 当slice cap无法满足需要，则在初始大小cap（即第三个参数，这里为6），成倍增长
 //new 分配了零值填充的T类型的内存空间，并返回其地址（指针） 当slice cap无法满足需要，则以16为基数，成倍增长
 func main() {
 	a := make([]int, 2, 6)
 	b := new([]int)
+	c := new(foo)
 	fmt.Println("a:", a, len(a), cap(a))
 	fmt.Println("b", b, *b, len(*b), cap(*b))
 	for i := 0; i < 10; i++ { //i < 10,i <20
@@ -16,6 +22,15 @@ func main() {
 	fmt.Println("=======================================")
 	fmt.Println("a:", a, len(a), cap(a))
 	fmt.Println("b:", b, *b, len(*b), cap(*b))
+	fmt.Println("=======================================")
+	fmt.Println(a == nil)
+	fmt.Println(b == nil)
+	fmt.Println(c == nil)
+	//同样由int的零值0填充了
+	fmt.Println(c.A)
+	//同样由string的零值""空字符串填充了
+	fmt.Printf("%+v\n", c)
+	fmt.Println(len(c.B))
 }
 
 // i < 10
