@@ -1,0 +1,28 @@
+package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"fmt"
+	"io"
+)
+
+func main() {
+	c := getSha256Code("123456")
+	fmt.Println(c)
+
+	c = getHmacCode("123456")
+	fmt.Println(c)
+}
+
+func getHmacCode(s string) string {
+	h := hmac.New(sha256.New, []byte("secret"))
+	io.WriteString(h, s)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func getSha256Code(s string) string {
+	h := sha256.New()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
