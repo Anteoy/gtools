@@ -40,3 +40,4 @@ gtools.iml
 #git commit -m 'update .gitignore'
 pkg
 .out
+tmp
